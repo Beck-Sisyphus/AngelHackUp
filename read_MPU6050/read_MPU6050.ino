@@ -30,6 +30,14 @@ void setup()
 
 void loop()
 {
+    readMPU6050();
+    avgArrays();
+    outputData();
+    reset();
+}
+
+void readMPU6050()
+{
     for (int i = 0; i <= 6; i++) {
         Wire.beginTransmission(MPU);
         Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
@@ -43,10 +51,7 @@ void loop()
         GyY[i] = Wire.read() << 8 | Wire.read();  // 0x45 (GYRO_YOUT_H)    &   0x46 (GYRO_YOUT_L)
         GyZ[i] = Wire.read() << 8 | Wire.read();  // 0x47 (GYRO_ZOUT_H)    &   0x48 (GYRO_ZOUT_L)
         delay(333);
-    }
-    avgArrays();
-    outputData();
-   // reset();
+    }   
 }
 
 int avgArrays()
