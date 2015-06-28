@@ -3,8 +3,8 @@
 
 #include <ESP8266WiFi.h>
 #include <SPI.h>
-// #include <Wifi.h>
 #include <WifiUdp.h>
+#include <Wire.h>
 
 // const char* ssid = "Idol";
 // const char* password = "how do you turn this on";
@@ -22,17 +22,41 @@ char  ReplyBuffer[] = "acknowledged";       // a string to send back
 
 WiFiUDP Udp;
 
+// IMU reading
+const int MPU = 0x68;  // I2C address of the MPU-6050
+
+int AcX[7] = {0, 0, 0, 0, 0, 0, 0};
+int AcY[7] = {0, 0, 0, 0, 0, 0, 0};
+int AcZ[7] = {0, 0, 0, 0, 0, 0, 0};
+int Tmp[7] = {0, 0, 0, 0, 0, 0, 0};
+int GyX[7] = {0, 0, 0, 0, 0, 0, 0};
+int GyY[7] = {0, 0, 0, 0, 0, 0, 0};
+int GyZ[7] = {0, 0, 0, 0, 0, 0, 0};
+
+int AcXAvg = 0;
+int AcYAvg = 0;
+int AcZAvg = 0;
+int GyXAvg = 0;
+int GyYAvg = 0;
+int GyZAvg = 0;
+
 void setup() {
     Serial.begin(115200);
     delay(10);
+
     connectToYun();
     Udp.begin(UDP_PORT);
+
+    prepareIMUread();
+    Serial.println("STARTING");
 }
 
 void loop() {
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(ReplyBuffer);
-    Udp.endPacket();
+    readMPU6050();
+    avgArrays();
+    outputDataToMonitor();
+    outputDataToUdp();
+    reset();
 }
 
 void connectToYun() {
@@ -54,4 +78,12 @@ void connectToYun() {
     Serial.println("WiFi connected");  
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
+}
+
+void prepareIMUread() {
+    Wire.begin();
+    Wire.beginTransmission(MPU);
+    Wire.write(0x6B);  // PWR_MGMT_1 register
+    Wire.write(0);     // set to zero (wakes up the MPU-6050)
+    Wire.endTransmission(true);
 }
